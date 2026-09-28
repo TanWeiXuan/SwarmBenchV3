@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from swarmbench.competition.glicko2 import GlickoRating, update_rating
+from swarmbench.competition.media import immutable_releases_enabled
 from swarmbench.competition.automation import reconcile_current_ratings
 from swarmbench.competition.ratings import RatingRecord, apply_rating_period, load_ratings
 from swarmbench.competition.submission import validate_structure
@@ -82,3 +83,20 @@ def test_submission_cannot_be_mixed_with_other_changes(monkeypatch: pytest.Monke
     )
     with pytest.raises(ValueError, match="exactly"):
         validate_structure("base", "contributor", tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("returncode", "stdout", "expected"),
+    [(0, '{"enabled": true}', True), (0, '{"enabled": false}', False), (1, "", None), (0, "not-json", None)],
+)
+def test_immutable_release_policy_is_best_effort(
+    monkeypatch: pytest.MonkeyPatch,
+    returncode: int,
+    stdout: str,
+    expected: bool | None,
+) -> None:
+    monkeypatch.setattr(
+        "swarmbench.competition.media.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=returncode, stdout=stdout),
+    )
+    assert immutable_releases_enabled("owner/repository") is expected
