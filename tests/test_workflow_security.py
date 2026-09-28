@@ -16,6 +16,14 @@ def test_untrusted_workflows_have_read_only_repository_permissions() -> None:
     assert '"### Tournament media\\n\\n" + (.asset_urls | map("- " + .) | join("\\n"))' in tournament
 
 
+def test_submission_calibration_is_bounded_and_clean_prs_merge_directly() -> None:
+    validation = (ROOT / ".github/workflows/submission-validation.yml").read_text(encoding="utf-8")
+    reporter = (ROOT / ".github/workflows/submission-reporter.yml").read_text(encoding="utf-8")
+    assert "--match-workers 2" in validation
+    assert "pull.mergeable_state === 'clean'" in reporter
+    assert "merge_method: 'squash', sha: run.head_sha" in reporter
+
+
 def test_trusted_workflows_do_not_checkout_untrusted_pr_head() -> None:
     accepted = (ROOT / ".github/workflows/submission-accepted.yml").read_text(encoding="utf-8")
     reporter = (ROOT / ".github/workflows/submission-reporter.yml").read_text(encoding="utf-8")
