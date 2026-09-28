@@ -1,6 +1,20 @@
 {
   "controllers": [
     {
+      "author": "TanWeiXuan",
+      "built_in": false,
+      "controller_id": "TanWeiXuan/simple_scout",
+      "deviation": 101.4514513143984,
+      "display_name": "Simple Scout",
+      "draws": 12,
+      "games": 24,
+      "losses": 7,
+      "rating": 1460.3591111716162,
+      "version_sha": "cb90c80409b6293fea827134b0369bec9c954cc5d288d85659e195c60594549c",
+      "volatility": 0.05999699905016279,
+      "wins": 5
+    },
+    {
       "author": "SwarmBench",
       "built_in": true,
       "controller_id": "radio_rush",

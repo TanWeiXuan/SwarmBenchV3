@@ -67,6 +67,7 @@ V3 starts fresh; no V2 ratings or history are carried over.
 | 1 | Radio Rush | SwarmBench | 1500 | 350 | 0 | 0 | 0 | 0 |
 | 2 | Rush | SwarmBench | 1500 | 350 | 0 | 0 | 0 | 0 |
 | 3 | Spread Rush | SwarmBench | 1500 | 350 | 0 | 0 | 0 | 0 |
+| 4 | Simple Scout | TanWeiXuan | 1460 | 101 | 5 | 12 | 7 | 24 |
 <!-- LEADERBOARD_END -->
 
 Tournament design is documented in [TOURNAMENTS.md](docs/TOURNAMENTS.md); replay and MP4 behavior in [REPLAYS_AND_MEDIA.md](docs/REPLAYS_AND_MEDIA.md); security boundaries in [SECURITY.md](docs/SECURITY.md). Repository administrators should follow [REPOSITORY_SETUP.md](docs/REPOSITORY_SETUP.md).
