@@ -110,6 +110,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       - run: python -m pip install -e ".[render]"
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
       - uses: actions/download-artifact@v4
         with: {pattern: tournament-batch-*, path: batches, merge-multiple: true}
       - run: python -m swarmbench.competition.media render --replays batches --output media --run-id "${{ github.run_id }}"

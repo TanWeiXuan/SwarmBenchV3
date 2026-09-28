@@ -1,11 +1,13 @@
 from copy import deepcopy
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from swarmbench.competition.glicko2 import GlickoRating, update_rating
 from swarmbench.competition.automation import reconcile_current_ratings
 from swarmbench.competition.ratings import RatingRecord, apply_rating_period, load_ratings
+from swarmbench.competition.submission import validate_structure
 from swarmbench.competition.tournament import _batch_hash, aggregate_batches, create_plan
 
 
@@ -61,3 +63,22 @@ def test_rating_reconciliation_preserves_newly_accepted_controller() -> None:
     assert merged["a"].rating == 1510 and merged["new/controller"].rating == 1600
     with pytest.raises(ValueError, match="frozen participant"):
         reconcile_current_ratings({"a": RatingRecord("a", "A", "x", rating=1499)}, snapshot, updated)
+
+
+def test_repository_template_is_not_classified_as_submission(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    changed = "A\tsubmissions/README.md\nA\tsubmissions/example/controller.py\nA\tsrc/swarmbench/api.py\n"
+    monkeypatch.setattr(
+        "swarmbench.competition.submission.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(stdout=changed),
+    )
+    assert validate_structure("base", "maintainer", tmp_path) == {"submission_path": None}
+
+
+def test_submission_cannot_be_mixed_with_other_changes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    changed = "A\tsubmissions/contributor/controller.py\nM\tREADME.md\n"
+    monkeypatch.setattr(
+        "swarmbench.competition.submission.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(stdout=changed),
+    )
+    with pytest.raises(ValueError, match="exactly"):
+        validate_structure("base", "contributor", tmp_path)

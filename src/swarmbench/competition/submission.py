@@ -21,6 +21,7 @@ from .glicko2 import GlickoRating, update_rating
 MAX_SUBMISSION_BYTES = 5 * 1024 * 1024
 CALIBRATION_SCHEMA = "swarmbench-calibration-v3"
 ALLOWED_IMPORT_ROOTS = set(os.sys.stdlib_module_names) | {"swarmbench"}
+SUBMISSION_TEMPLATE = "submissions/example/controller.py"
 
 
 def _write_json(data: dict[str, Any], path: str | Path) -> None:
@@ -57,7 +58,13 @@ def validate_structure(base_ref: str, author: str, root: Path) -> dict[str, Any]
     changes = [line.split("\t") for line in completed.stdout.splitlines() if line.strip()]
     if not changes:
         raise ValueError("pull request has no changes")
-    submission = [parts[-1] for parts in changes if parts[-1].startswith("submissions/")]
+    submission = [
+        parts[-1]
+        for parts in changes
+        if parts[-1].startswith("submissions/")
+        and parts[-1].endswith(".py")
+        and parts[-1] != SUBMISSION_TEMPLATE
+    ]
     if submission:
         expected_prefix = f"submissions/{author}/"
         if len(changes) != 1 or len(submission) != 1 or changes[0][0] not in {"A", "M"} or not submission[0].startswith(expected_prefix) or not submission[0].endswith(".py"):

@@ -23,6 +23,10 @@ jobs:
           cache: pip
       - run: python -m pip install -e ".[dev,competition,render]"
       - run: python -m pytest
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
       - name: MP4 smoke
         run: |
           python -m swarmbench match --controller-a rush --controller-b radio_rush --seed 42 --max-control-ticks 5 --replay /tmp/smoke.json.gz
