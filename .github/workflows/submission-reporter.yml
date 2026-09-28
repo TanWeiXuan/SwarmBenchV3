@@ -68,8 +68,14 @@ jobs:
               const {data: pull} = await github.rest.pulls.get({...context.repo, pull_number: number});
               if (pull.head.sha === run.head_sha) {
                 if (pull.draft) await github.graphql('mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){clientMutationId}}', {id: pull.node_id});
-                await github.graphql('mutation($id:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:SQUASH}){pullRequest{autoMergeRequest{enabledAt}}}}', {id: pull.node_id});
-                body += '\n✅ Squash auto-merge enabled for the validated SHA.\n';
+                if (pull.mergeable_state === 'clean') {
+                  const {data: merge} = await github.rest.pulls.merge({...context.repo, pull_number: number, merge_method: 'squash', sha: run.head_sha});
+                  if (!merge.merged) throw new Error(`validated clean PR did not merge: ${merge.message}`);
+                  body += '\n✅ Validated SHA squash-merged.\n';
+                } else {
+                  await github.graphql('mutation($id:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:SQUASH}){pullRequest{autoMergeRequest{enabledAt}}}}', {id: pull.node_id});
+                  body += '\n✅ Squash auto-merge enabled for the validated SHA.\n';
+                }
               } else body += '\n⏳ Result is stale; waiting for the current head.\n';
             }
             body += `\n[Validation run](${run.html_url})`;

@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
+from threading import Event, Lock
 from types import SimpleNamespace
 
 import pytest
@@ -8,7 +9,7 @@ from swarmbench.competition.glicko2 import GlickoRating, update_rating
 from swarmbench.competition.media import immutable_releases_enabled
 from swarmbench.competition.automation import reconcile_current_ratings
 from swarmbench.competition.ratings import RatingRecord, apply_rating_period, load_ratings
-from swarmbench.competition.submission import validate_structure
+from swarmbench.competition.submission import calibration_seed, validate_structure
 from swarmbench.competition.tournament import _batch_hash, aggregate_batches, create_plan
 
 
@@ -83,6 +84,62 @@ def test_submission_cannot_be_mixed_with_other_changes(monkeypatch: pytest.Monke
     )
     with pytest.raises(ValueError, match="exactly"):
         validate_structure("base", "contributor", tmp_path)
+
+
+def test_calibration_matches_run_in_parallel_and_keep_canonical_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    root = Path(__file__).parents[1]
+    lock = Lock()
+    overlap = Event()
+    active = 0
+    peak = 0
+
+    def fake_run_match(left, right, *, seed, backend):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+            if active >= 2:
+                overlap.set()
+        assert overlap.wait(timeout=1.0), "calibration matches did not overlap"
+        with lock:
+            active -= 1
+        stats = {"units": []}
+        return SimpleNamespace(
+            winner=None,
+            replay=SimpleNamespace(result={"final_state_hash": f"{seed:064x}"}),
+            stats_a=stats,
+            stats_b=stats,
+        )
+
+    monkeypatch.setattr("swarmbench.competition.submission.run_match", fake_run_match)
+    result = calibration_seed(
+        root / "submissions/example/controller.py",
+        "submissions/example/controller.py",
+        "a" * 40,
+        0,
+        backend="local",
+        match_workers=2,
+    )
+
+    assert peak == 2
+    assert [(game["opponent"], game["side"]) for game in result["games"]] == [
+        (opponent, side)
+        for opponent in ("rush", "spread_rush", "radio_rush")
+        for side in ("ab", "ba")
+    ]
+
+
+def test_calibration_rejects_nonpositive_worker_count() -> None:
+    root = Path(__file__).parents[1]
+    with pytest.raises(ValueError, match="positive"):
+        calibration_seed(
+            root / "submissions/example/controller.py",
+            "submissions/example/controller.py",
+            "a" * 40,
+            0,
+            backend="local",
+            match_workers=0,
+        )
 
 
 @pytest.mark.parametrize(

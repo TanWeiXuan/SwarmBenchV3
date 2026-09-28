@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import os
@@ -22,6 +23,7 @@ MAX_SUBMISSION_BYTES = 5 * 1024 * 1024
 CALIBRATION_SCHEMA = "swarmbench-calibration-v3"
 ALLOWED_IMPORT_ROOTS = set(os.sys.stdlib_module_names) | {"swarmbench"}
 SUBMISSION_TEMPLATE = "submissions/example/controller.py"
+DEFAULT_CALIBRATION_MATCH_WORKERS = 2
 
 
 def _write_json(data: dict[str, Any], path: str | Path) -> None:
@@ -83,23 +85,51 @@ def smoke_test(path: str | Path, *, backend: str, max_control_ticks: int = 30) -
     }
 
 
-def calibration_seed(path: str | Path, submission_id: str, head_sha: str, seed_index: int, *, backend: str) -> dict[str, Any]:
+def _calibration_game(
+    path: str | Path,
+    opponent: str,
+    seed: int,
+    side: str,
+    backend: str,
+) -> dict[str, Any]:
+    left, right = (path, baseline_path(opponent)) if side == "ab" else (baseline_path(opponent), path)
+    match = run_match(left, right, seed=seed, backend=backend)
+    submission_won = match.winner is not None and (
+        (side == "ab" and match.winner.value == "A") or (side == "ba" and match.winner.value == "B")
+    )
+    submission_lost = match.winner is not None and not submission_won
+    return {
+        "opponent": opponent,
+        "seed": seed,
+        "side": side,
+        "score": 1.0 if submission_won else 0.0 if submission_lost else 0.5,
+        "final_state_hash": match.replay.result["final_state_hash"],
+        "timing": match.stats_a if side == "ab" else match.stats_b,
+    }
+
+
+def calibration_seed(
+    path: str | Path,
+    submission_id: str,
+    head_sha: str,
+    seed_index: int,
+    *,
+    backend: str,
+    match_workers: int = DEFAULT_CALIBRATION_MATCH_WORKERS,
+) -> dict[str, Any]:
     if not 0 <= seed_index < 4 or not re.fullmatch(r"[0-9a-fA-F]{7,64}", head_sha):
         raise ValueError("invalid calibration identity")
+    if match_workers < 1:
+        raise ValueError("calibration match worker count must be positive")
     controller_hash = hashlib.sha256(Path(path).read_bytes()).hexdigest()
-    games = []
+    tasks = []
     for opponent_index, opponent in enumerate(BASELINE_NAMES):
         seed = int.from_bytes(hashlib.sha256(f"v3-calibration:{head_sha}:{seed_index}:{opponent_index}".encode()).digest()[:8], "big") % 2**63
         for side in ("ab", "ba"):
-            left, right = (path, baseline_path(opponent)) if side == "ab" else (baseline_path(opponent), path)
-            match = run_match(left, right, seed=seed, backend=backend)
-            submission_won = match.winner is not None and ((side == "ab" and match.winner.value == "A") or (side == "ba" and match.winner.value == "B"))
-            submission_lost = match.winner is not None and not submission_won
-            games.append({
-                "opponent": opponent, "seed": seed, "side": side,
-                "score": 1.0 if submission_won else 0.0 if submission_lost else 0.5,
-                "final_state_hash": match.replay.result["final_state_hash"], "timing": match.stats_a if side == "ab" else match.stats_b,
-            })
+            tasks.append((path, opponent, seed, side, backend))
+    with ThreadPoolExecutor(max_workers=min(match_workers, len(tasks)), thread_name_prefix="calibration-match") as executor:
+        futures = [executor.submit(_calibration_game, *task) for task in tasks]
+        games = [future.result() for future in futures]
     core = {"schema": CALIBRATION_SCHEMA, "engine_version": ENGINE_VERSION, "ruleset_version": RULESET_VERSION, "submission_id": submission_id, "submission_path": str(path), "head_sha": head_sha, "controller_sha256": controller_hash, "seed_index": seed_index, "games": games}
     return {**core, "artifact_sha256": hashlib.sha256(json.dumps(core, sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
 
@@ -150,14 +180,14 @@ def main(argv: list[str] | None = None) -> int:
     structure = commands.add_parser("structure"); structure.add_argument("--base-ref", required=True); structure.add_argument("--author", required=True); structure.add_argument("--output", required=True)
     source = commands.add_parser("source"); source.add_argument("path")
     smoke = commands.add_parser("smoke"); smoke.add_argument("path"); smoke.add_argument("--output", required=True)
-    calibrate = commands.add_parser("calibrate"); calibrate.add_argument("path"); calibrate.add_argument("--submission-id", required=True); calibrate.add_argument("--head-sha", required=True); calibrate.add_argument("--seed-index", type=int, required=True); calibrate.add_argument("--output", required=True)
+    calibrate = commands.add_parser("calibrate"); calibrate.add_argument("path"); calibrate.add_argument("--submission-id", required=True); calibrate.add_argument("--head-sha", required=True); calibrate.add_argument("--seed-index", type=int, required=True); calibrate.add_argument("--match-workers", type=int, default=DEFAULT_CALIBRATION_MATCH_WORKERS); calibrate.add_argument("--output", required=True)
     aggregate = commands.add_parser("aggregate"); aggregate.add_argument("directory", type=Path); aggregate.add_argument("--submission-id", required=True); aggregate.add_argument("--submission-path", required=True); aggregate.add_argument("--head-sha", required=True); aggregate.add_argument("--output", required=True)
     arguments = parser.parse_args(argv)
     backend = os.environ.get("SWARMBENCH_BACKEND", "local")
     if arguments.command == "structure": _write_json(validate_structure(arguments.base_ref, arguments.author, Path.cwd()), arguments.output)
     elif arguments.command == "source": validate_source(arguments.path)
     elif arguments.command == "smoke": _write_json(smoke_test(arguments.path, backend=backend), arguments.output)
-    elif arguments.command == "calibrate": _write_json(calibration_seed(arguments.path, arguments.submission_id, arguments.head_sha, arguments.seed_index, backend=backend), arguments.output)
+    elif arguments.command == "calibrate": _write_json(calibration_seed(arguments.path, arguments.submission_id, arguments.head_sha, arguments.seed_index, backend=backend, match_workers=arguments.match_workers), arguments.output)
     else: _write_json(aggregate_calibration(arguments.directory, arguments.submission_id, arguments.submission_path, arguments.head_sha), arguments.output)
     return 0
 

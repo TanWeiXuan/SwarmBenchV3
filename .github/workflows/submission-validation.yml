@@ -101,7 +101,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           SEED_INDEX: ${{ matrix.seed_index }}
           SWARMBENCH_BACKEND: docker
-        run: python -m swarmbench.competition.submission calibrate "$SUBMISSION_PATH" --submission-id "$SUBMISSION_PATH" --head-sha "$HEAD_SHA" --seed-index "$SEED_INDEX" --output "calibration-seed-$SEED_INDEX.json"
+        run: python -m swarmbench.competition.submission calibrate "$SUBMISSION_PATH" --submission-id "$SUBMISSION_PATH" --head-sha "$HEAD_SHA" --seed-index "$SEED_INDEX" --match-workers 2 --output "calibration-seed-$SEED_INDEX.json"
       - uses: actions/upload-artifact@v4
         with:
           name: calibration-seed-${{ matrix.seed_index }}
