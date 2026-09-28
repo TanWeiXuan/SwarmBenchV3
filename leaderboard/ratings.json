@@ -1,0 +1,47 @@
+{
+  "controllers": [
+    {
+      "author": "SwarmBench",
+      "built_in": true,
+      "controller_id": "radio_rush",
+      "deviation": 350.0,
+      "display_name": "Radio Rush",
+      "draws": 0,
+      "games": 0,
+      "losses": 0,
+      "rating": 1500.0,
+      "version_sha": "",
+      "volatility": 0.06,
+      "wins": 0
+    },
+    {
+      "author": "SwarmBench",
+      "built_in": true,
+      "controller_id": "rush",
+      "deviation": 350.0,
+      "display_name": "Rush",
+      "draws": 0,
+      "games": 0,
+      "losses": 0,
+      "rating": 1500.0,
+      "version_sha": "",
+      "volatility": 0.06,
+      "wins": 0
+    },
+    {
+      "author": "SwarmBench",
+      "built_in": true,
+      "controller_id": "spread_rush",
+      "deviation": 350.0,
+      "display_name": "Spread Rush",
+      "draws": 0,
+      "games": 0,
+      "losses": 0,
+      "rating": 1500.0,
+      "version_sha": "",
+      "volatility": 0.06,
+      "wins": 0
+    }
+  ],
+  "schema_version": 3
+}

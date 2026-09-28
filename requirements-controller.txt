@@ -1,0 +1,2 @@
+# The V3 baseline/template needs only the Python standard library.
+# Official images may add explicitly pinned numerical libraries in a later rules revision.

@@ -1,0 +1,74 @@
+name: Submission Accepted
+
+on:
+  pull_request_target:
+    types: [closed]
+    paths: ["submissions/**/*.py"]
+  workflow_dispatch:
+    inputs:
+      pr_number: {required: true, type: string}
+      head_sha: {required: true, type: string}
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  initialize-rating:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: swarmbench-v3-rating-publication
+      cancel-in-progress: false
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || inputs.head_sha }}
+    steps:
+      - name: Create short-lived publication token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.SWARMBENCH_APP_ID }}
+          private-key: ${{ secrets.SWARMBENCH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[competition]"
+      - name: Resolve exactly one merged submission
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          merge_sha=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" --jq '.merge_commit_sha')
+          mapfile -t paths < <(git diff-tree --no-commit-id --name-only -r "$merge_sha^" "$merge_sha" -- submissions)
+          [[ ${#paths[@]} -eq 1 ]]
+          printf '%s\n' "${paths[0]}" > submission-path.txt
+      - name: Download matching validated calibration artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh run list --workflow submission-validation.yml --commit "$HEAD_SHA" --status success --json databaseId --jq '.[0].databaseId')
+          [[ -n "$run_id" ]]
+          gh run download "$run_id" --name calibration-result --dir calibration-artifact
+      - name: Strictly apply current rating state
+        run: python -m swarmbench.competition.publisher --artifact calibration-artifact/calibration-result.json --ratings leaderboard/ratings.json --readme README.md --expected-path-file submission-path.txt --expected-sha "$HEAD_SHA"
+      - name: Open serialized current-state PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git config user.name swarmbench-bot
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git checkout -b "bot/v3-rating-$PR_NUMBER"
+          git add leaderboard/ratings.json README.md
+          git commit -m "chore: initialize accepted V3 controller rating"
+          git push --set-upstream origin "bot/v3-rating-$PR_NUMBER"
+          url=$(gh pr create --title "Initialize accepted V3 controller rating" --body "SHA-bound current-state update for submission PR #$PR_NUMBER." --base main --head "bot/v3-rating-$PR_NUMBER")
+          gh pr merge "$url" --auto --squash
+          bash .github/scripts/wait-for-pr-merge.sh "$url"
