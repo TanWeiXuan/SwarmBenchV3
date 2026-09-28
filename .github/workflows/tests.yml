@@ -1,0 +1,34 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test suite
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e ".[dev,competition,render]"
+      - run: python -m pytest
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+      - name: MP4 smoke
+        run: |
+          python -m swarmbench match --controller-a rush --controller-b radio_rush --seed 42 --max-control-ticks 5 --replay /tmp/smoke.json.gz
+          python -m swarmbench render /tmp/smoke.json.gz --output /tmp/smoke.mp4 --width 600
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,pix_fmt,width,height /tmp/smoke.mp4

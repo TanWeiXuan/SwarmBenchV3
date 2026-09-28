@@ -1,0 +1,74 @@
+name: Submission Reporter
+
+on:
+  workflow_run:
+    workflows: ["Submission Validation"]
+    types: [requested, in_progress, completed]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  report:
+    if: ${{ github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve submission PR
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const number = run.pull_requests?.[0]?.number;
+            if (!number) return;
+            const {data: files} = await github.rest.pulls.listFiles({...context.repo, pull_number: number, per_page: 100});
+            if (files.some(file => file.filename.startsWith('submissions/'))) core.setOutput('number', number);
+      - name: Create short-lived app token
+        id: app-token
+        if: ${{ steps.pr.outputs.number }}
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.SWARMBENCH_APP_ID }}
+          private-key: ${{ secrets.SWARMBENCH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Download SHA-bound result
+        if: ${{ steps.pr.outputs.number && github.event.workflow_run.status == 'completed' && github.event.workflow_run.conclusion == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: calibration-result
+          path: result
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Report and merge validated head
+        if: ${{ steps.pr.outputs.number }}
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const fs = require('fs');
+            const run = context.payload.workflow_run;
+            const number = Number(process.env.PR_NUMBER);
+            let body = '<!-- swarmbench-v3-submission-progress -->\n🐝 **SwarmBenchV3 submission**\n\n';
+            body += run.status === 'completed' ? (run.conclusion === 'success' ? '✅ Validation complete\n' : '❌ Validation failed\n') : '🔄 Validation running\n';
+            if (fs.existsSync('result/calibration-result.json')) {
+              const value = JSON.parse(fs.readFileSync('result/calibration-result.json'));
+              if (value.schema === 'swarmbench-calibration-v3' && value.head_sha === run.head_sha) body += `\n${value.wins} W / ${value.draws} D / ${value.losses} L; provisional ${value.provisional_rating.toFixed(0)} (RD ${value.deviation.toFixed(0)}).\n`;
+            }
+            if (run.status === 'completed' && run.conclusion === 'success') {
+              const {data: pull} = await github.rest.pulls.get({...context.repo, pull_number: number});
+              if (pull.head.sha === run.head_sha) {
+                if (pull.draft) await github.graphql('mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){clientMutationId}}', {id: pull.node_id});
+                await github.graphql('mutation($id:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:SQUASH}){pullRequest{autoMergeRequest{enabledAt}}}}', {id: pull.node_id});
+                body += '\n✅ Squash auto-merge enabled for the validated SHA.\n';
+              } else body += '\n⏳ Result is stale; waiting for the current head.\n';
+            }
+            body += `\n[Validation run](${run.html_url})`;
+            const {data: comments} = await github.rest.issues.listComments({...context.repo, issue_number: number, per_page: 100});
+            const old = comments.find(item => item.body?.includes('<!-- swarmbench-v3-submission-progress -->'));
+            if (old) await github.rest.issues.updateComment({...context.repo, comment_id: old.id, body});
+            else await github.rest.issues.createComment({...context.repo, issue_number: number, body});
