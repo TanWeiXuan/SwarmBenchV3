@@ -3,6 +3,20 @@
     {
       "author": "TanWeiXuan",
       "built_in": false,
+      "controller_id": "TanWeiXuan/lantern_phalanx",
+      "deviation": 101.45145208031596,
+      "display_name": "Lantern Phalanx",
+      "draws": 0,
+      "games": 24,
+      "losses": 0,
+      "rating": 1975.690673123152,
+      "version_sha": "3acdfc08b39d310fca149387727e280deeb24f912b6c7ec84259d28e1d41fa5c",
+      "volatility": 0.060003088936221895,
+      "wins": 24
+    },
+    {
+      "author": "TanWeiXuan",
+      "built_in": false,
       "controller_id": "TanWeiXuan/simple_scout",
       "deviation": 101.4514513143984,
       "display_name": "Simple Scout",
