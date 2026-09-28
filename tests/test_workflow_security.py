@@ -13,6 +13,7 @@ def test_untrusted_workflows_have_read_only_repository_permissions() -> None:
     assert "SWARMBENCH_APP_PRIVATE_KEY" not in compute
     assert "max-parallel: 19" in compute
     assert 'cron: "17 */6 * * *"' in tournament
+    assert '"### Tournament media\\n\\n" + (.asset_urls | map("- " + .) | join("\\n"))' in tournament
 
 
 def test_trusted_workflows_do_not_checkout_untrusted_pr_head() -> None:

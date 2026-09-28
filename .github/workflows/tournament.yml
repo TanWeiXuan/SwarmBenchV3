@@ -205,5 +205,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          jq -r '.asset_urls | "### Tournament media\n\n" + map("- " + .) | join("\n")' media-links.json > media-comment.md
+          jq -r '"### Tournament media\n\n" + (.asset_urls | map("- " + .) | join("\n"))' media-links.json > media-comment.md
           gh api graphql -f query='mutation($id:ID!,$body:String!){addDiscussionComment(input:{discussionId:$id,body:$body}){comment{id}}}' -f id="$(jq -r .id discussion/discussion.json)" -F body=@media-comment.md
