@@ -4,7 +4,7 @@ Validated on 2026-09-28 with Python 3.12.3 and FFmpeg 6.1.1/libx264.
 
 ## Automated checks
 
-- `python -m pytest`: 35 passed.
+- `python -m pytest`: 42 passed.
 - `python -m compileall -q src tests`: passed.
 - All five workflow YAML files parsed with PyYAML.
 - `pip check` reported no broken requirements.
@@ -39,10 +39,10 @@ Local ignored artifacts are under `out/`:
 
 FFprobe confirmed H.264, `yuv420p`, 1200×880. Explicit missing-FFmpeg behavior is covered by a test and raises an actionable error.
 
-## Honest blockers and untested remote paths
+## Remote validation and remaining notes
 
-- Docker 29.1.3 is installed, but this user cannot connect to `/var/run/docker.sock`. `docker build` and a Docker-backed match fail with permission denied. The match path classifies this as `ControllerInfrastructureError`, not a controller forfeit. Docker flags, per-unit command construction, fresh-process isolation, private module state, protocol limits, timeout/failure behavior and resets are tested; an actual sixteen-container match remains to be run on a Docker-authorized host.
-- GitHub Discussions is enabled, but `TanWeiXuan/SwarmBenchV3` lacks the `Tournament Results` category.
-- Repository Actions variable `SWARMBENCH_APP_ID` and secret `SWARMBENCH_APP_PRIVATE_KEY` are absent. Therefore App-token merges, permanent Discussion reporting and Release upload were implemented but not live-tested.
-- Release immutability currently reports `enabled: false, enforced_by_owner: false`. Publication nevertheless uses separate non-latest per-run media releases, so enabling immutability later does not require mutating an existing release.
-- The existing active `Protect main` ruleset and repository Actions/merge permissions match the V2 settings. No workflow, tournament, release or publication was triggered remotely.
+- The `setup-smoke-2` exhibition ([run 36451543285](https://github.com/TanWeiXuan/SwarmBenchV3/actions/runs/36451543285)) completed all six Docker compute batches on GitHub-hosted runners. This live-tested the sixteen-container match path, artifact validation and fail-closed aggregation with the repository's configured App credentials.
+- The same run updated the permanent `Tournament Results` Discussion, rendered three MP4/PNG selections and published ten durable assets to the non-latest [`tournament-media-run-36451543285`](https://github.com/TanWeiXuan/SwarmBenchV3/releases/tag/tournament-media-run-36451543285) release. Its final link-comment step exposed a `jq` grouping bug; the assets and tournament result were unaffected, and the corrected expression is regression-tested.
+- The earlier `setup-smoke-1` run left an empty `tournament-media-run-36450562146` release after the minimally privileged App could not read the repository-level immutable-release setting. Publication now treats that setting as best-effort when creating a new release, while continuing to fail closed on conflicting assets when immutability is enabled or cannot be determined.
+- Docker 29.1.3 remains inaccessible to the local desktop user through `/var/run/docker.sock`; Docker-backed execution is therefore verified remotely, while the local process runner remains the development and test path.
+- The active `Protect main` ruleset and repository Actions/merge permissions match the V2 settings. GitHub currently emits maintenance warnings for the App-token action's deprecated `app-id` input and for JavaScript actions moving from Node 20 to Node 24; neither affected the validated tournament.
