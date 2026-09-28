@@ -2,9 +2,9 @@
 
 SwarmBenchV3 is a deterministic, open-source benchmark and Kaggle-style competition for decentralized multi-agent control and combat. Two teams deploy eight identical units into an unknown arena. Every unit runs an independent instance of the submitted Python controller: there is no omniscient team controller, shared memory, or hidden map access.
 
-[![SwarmBenchV3 tournament replay poster](https://github.com/TanWeiXuan/SwarmBenchV3/releases/download/tournament-media-run-36451543285/run-36451543285-p0000-s00-ab.png)](https://github.com/TanWeiXuan/SwarmBenchV3/releases/download/tournament-media-run-36451543285/run-36451543285-p0000-s00-ab.mp4)
+![Lantern Phalanx mirror match](lantern-phalanx-mirror.gif)
 
-*A tournament replay—click the poster to watch the MP4.*
+*Lantern Phalanx versus Lantern Phalanx, seed 42—the decisive 13-second combat sequence.*
 
 Units explore through local vision, coordinate with one optional 64-bit radio packet per control step, and fight with deterministic hitscan weapons. The authoritative simulator is headless. Versioned replays are produced first, verified by reconstruction, and rendered afterward, so presentation cannot affect match timing or results.
 
