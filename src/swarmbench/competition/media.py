@@ -57,6 +57,21 @@ def build_media(replay_root: Path, output: Path, *, run_id: str, width: int = 12
     return manifest
 
 
+def immutable_releases_enabled(repository: str) -> bool | None:
+    """Return the policy when readable, or None when the token cannot inspect it."""
+    result = subprocess.run(
+        ["gh", "api", f"repos/{repository}/immutable-releases"],
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode:
+        return None
+    try:
+        return bool(json.loads(result.stdout).get("enabled", False))
+    except (AttributeError, json.JSONDecodeError):
+        return None
+
+
 def publish_media(directory: Path, repository: str, run_id: str) -> list[str]:
     tag = f"tournament-media-run-{run_id}"
     title = f"Tournament media run {run_id}"
@@ -76,9 +91,11 @@ def publish_media(directory: Path, repository: str, run_id: str) -> list[str]:
             continue
         pending.append(path)
     if pending:
-        immutable = json.loads(subprocess.run(["gh", "api", f"repos/{repository}/immutable-releases"], text=True, capture_output=True, check=True).stdout).get("enabled", False)
-        if immutable and any(path.name in existing for path in pending):
-            raise RuntimeError("immutable per-run release already contains a different asset; publish under a new run ID")
+        immutable = immutable_releases_enabled(repository)
+        collisions = any(path.name in existing for path in pending)
+        if collisions and immutable is not False:
+            detail = "immutable" if immutable else "policy-unreadable"
+            raise RuntimeError(f"{detail} per-run release already contains a different asset; publish under a new run ID")
         subprocess.run(["gh", "release", "upload", tag, "--repo", repository, "--clobber", *map(str, pending)], check=True)
         data = json.loads(subprocess.run(["gh", "api", f"repos/{repository}/releases/tags/{tag}"], text=True, capture_output=True, check=True).stdout)
     return [asset["browser_download_url"] for asset in data.get("assets", [])]
