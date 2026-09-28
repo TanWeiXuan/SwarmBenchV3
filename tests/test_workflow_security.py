@@ -26,6 +26,14 @@ def test_trusted_workflows_do_not_checkout_untrusted_pr_head() -> None:
     assert "swarmbench-v3-rating-publication" in tournament
 
 
+def test_repository_template_does_not_trigger_submission_publication() -> None:
+    accepted = (ROOT / ".github/workflows/submission-accepted.yml").read_text(encoding="utf-8")
+    reporter = (ROOT / ".github/workflows/submission-reporter.yml").read_text(encoding="utf-8")
+    assert '"!submissions/example/controller.py"' in accepted
+    assert "file.filename.endsWith('.py')" in reporter
+    assert "file.filename !== 'submissions/example/controller.py'" in reporter
+
+
 def test_runtime_has_no_v2_checkout_dependency() -> None:
     for path in (ROOT / "src").rglob("*.py"):
         text = path.read_text(encoding="utf-8")
