@@ -17,6 +17,20 @@
     {
       "author": "TanWeiXuan",
       "built_in": false,
+      "controller_id": "TanWeiXuan/Qwen_3_8_Swift_Pincer",
+      "deviation": 60.34890653766334,
+      "display_name": "Qwen 3 8 Swift Pincer",
+      "draws": 0,
+      "games": 48,
+      "losses": 15,
+      "rating": 1809.483941435354,
+      "version_sha": "1fbbd5efe73b93569526887fad6cdab62729370f903876305e1a2347153b3354",
+      "volatility": 0.05999937164799154,
+      "wins": 33
+    },
+    {
+      "author": "TanWeiXuan",
+      "built_in": false,
       "controller_id": "TanWeiXuan/lantern_phalanx",
       "deviation": 67.8689079212246,
       "display_name": "Lantern Phalanx",
