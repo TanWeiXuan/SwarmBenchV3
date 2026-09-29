@@ -172,6 +172,17 @@ jobs:
           bash .github/scripts/wait-for-pr-merge.sh "$url"
       - uses: actions/upload-artifact@v4
         with: {name: tournament-results, path: tournament-result.json, retention-days: 90}
+      - name: Report final validation or publication failure
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if test -f discussion/discussion.json; then
+            gh api graphql -f query='mutation($id:ID!,$body:String!){addDiscussionComment(input:{discussionId:$id,body:$body}){comment{id}}}' -f id="$(jq -r .id discussion/discussion.json)" -f body="Status: FAILED — final validation or publication
+
+          The final job did not complete successfully. Any earlier COMPLETE reply describes validated calculations, not confirmation that the rating PR merged. Check the failed step and any publication PR in the [Actions run]($RUN_URL) before treating these ratings as published."
+          fi
 
   publish-media:
     name: Publish durable media assets
