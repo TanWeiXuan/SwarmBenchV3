@@ -20,6 +20,7 @@ def test_submission_calibration_is_bounded_and_clean_prs_merge_directly() -> Non
     validation = (ROOT / ".github/workflows/submission-validation.yml").read_text(encoding="utf-8")
     reporter = (ROOT / ".github/workflows/submission-reporter.yml").read_text(encoding="utf-8")
     assert "--match-workers 2" in validation
+    assert "--ratings leaderboard/ratings.json" in validation
     assert "pull.mergeable_state === 'clean'" in reporter
     assert "merge_method: 'squash', sha: run.head_sha" in reporter
 

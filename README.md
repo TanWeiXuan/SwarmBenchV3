@@ -151,7 +151,7 @@ Open a pull request containing exactly one regular file:
 submissions/<github-login>/<controller-name>.py
 ```
 
-The required workflow checks PR structure, imports and API use, runs a Docker smoke match, and executes 24 deterministic calibration games across four parallel shards. There is no win-rate or aggression threshold: a legal defensive controller may draw or lose calibration games and still be accepted. A trusted reporter binds results to the exact file and commit SHA before squash-merging; a separate serialized PR publishes the initial rating.
+The required workflow checks PR structure, imports and API use, runs a Docker smoke match, and calibrates against every built-in and accepted community controller on both sides across four parallel shards. Opponent versions and ratings are frozen into the artifacts, and the submitted controller is excluded from its own roster. There is no win-rate or aggression threshold: a legal defensive controller may draw or lose calibration games and still be accepted. A trusted reporter binds results to the exact file, commit SHA and opponent snapshot before squash-merging; a separate serialized PR publishes the initial rating.
 
 Read the [submission guide](docs/SUBMISSIONS.md) before opening a PR.
 

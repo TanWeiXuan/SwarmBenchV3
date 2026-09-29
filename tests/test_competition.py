@@ -1,4 +1,6 @@
 from copy import deepcopy
+import hashlib
+import json
 from pathlib import Path
 from threading import Event, Lock
 from types import SimpleNamespace
@@ -8,8 +10,9 @@ import pytest
 from swarmbench.competition.glicko2 import GlickoRating, update_rating
 from swarmbench.competition.media import immutable_releases_enabled
 from swarmbench.competition.automation import reconcile_current_ratings
-from swarmbench.competition.ratings import RatingRecord, apply_rating_period, load_ratings
-from swarmbench.competition.submission import calibration_seed, validate_structure
+from swarmbench.competition.ratings import RatingRecord, apply_rating_period, load_ratings, save_ratings
+from swarmbench.competition.submission import aggregate_calibration, calibration_opponents, calibration_seed, validate_structure
+from swarmbench.controllers.baselines import BASELINE_NAMES
 from swarmbench.competition.tournament import _batch_hash, aggregate_batches, create_plan
 
 
@@ -112,19 +115,32 @@ def test_calibration_matches_run_in_parallel_and_keep_canonical_order(monkeypatc
         )
 
     monkeypatch.setattr("swarmbench.competition.submission.run_match", fake_run_match)
+    submission = root / "submissions/TanWeiXuan/lantern_phalanx.py"
     result = calibration_seed(
-        root / "submissions/example/controller.py",
-        "submissions/example/controller.py",
+        submission,
+        "submissions/TanWeiXuan/lantern_phalanx.py",
         "a" * 40,
         0,
         backend="local",
         match_workers=2,
+        ratings_path=root / "leaderboard/ratings.json",
     )
 
+    records = load_ratings(root / "leaderboard/ratings.json")
+    expected_opponents = [
+        *BASELINE_NAMES,
+        *sorted(
+            controller_id
+            for controller_id, record in records.items()
+            if not record.built_in and controller_id != "TanWeiXuan/lantern_phalanx"
+        ),
+    ]
     assert peak == 2
+    assert [opponent["controller_id"] for opponent in result["opponents"]] == expected_opponents
+    assert any(not opponent["built_in"] for opponent in result["opponents"])
     assert [(game["opponent"], game["side"]) for game in result["games"]] == [
         (opponent, side)
-        for opponent in ("rush", "spread_rush", "radio_rush")
+        for opponent in expected_opponents
         for side in ("ab", "ba")
     ]
 
@@ -140,6 +156,84 @@ def test_calibration_rejects_nonpositive_worker_count() -> None:
             backend="local",
             match_workers=0,
         )
+
+
+def test_calibration_rejects_community_source_that_disagrees_with_ratings(tmp_path: Path) -> None:
+    ratings_path = tmp_path / "leaderboard/ratings.json"
+    controller_path = tmp_path / "submissions/alice/controller.py"
+    ratings_path.parent.mkdir()
+    controller_path.parent.mkdir(parents=True)
+    controller_path.write_text("from swarmbench import BaseUnitController\nclass UnitController(BaseUnitController):\n    pass\n", encoding="utf-8")
+    records = {
+        name: RatingRecord(name, name, "SwarmBench", built_in=True)
+        for name in BASELINE_NAMES
+    }
+    records["alice/controller"] = RatingRecord(
+        "alice/controller",
+        "Controller",
+        "alice",
+        version_sha="0" * 64,
+    )
+    save_ratings(records, ratings_path)
+
+    with pytest.raises(ValueError, match="hash mismatch"):
+        calibration_opponents("submissions/new/controller.py", ratings_path)
+
+
+def test_calibration_aggregate_uses_frozen_community_ratings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    root = Path(__file__).parents[1]
+    submission_path = "submissions/TanWeiXuan/lantern_phalanx.py"
+    head_sha = "b" * 40
+
+    def fake_run_match(left, right, *, seed, backend):
+        stats = {"units": []}
+        return SimpleNamespace(
+            winner=None,
+            replay=SimpleNamespace(result={"final_state_hash": f"{seed:064x}"}),
+            stats_a=stats,
+            stats_b=stats,
+        )
+
+    monkeypatch.setattr("swarmbench.competition.submission.run_match", fake_run_match)
+    artifacts = []
+    for seed_index in range(4):
+        artifact = calibration_seed(
+            submission_path,
+            submission_path,
+            head_sha,
+            seed_index,
+            backend="local",
+            ratings_path=root / "leaderboard/ratings.json",
+        )
+        artifacts.append(artifact)
+        (tmp_path / f"calibration-seed-{seed_index}.json").write_text(json.dumps(artifact), encoding="utf-8")
+
+    result = aggregate_calibration(tmp_path, submission_path, submission_path, head_sha)
+    expected_matches = [
+        (GlickoRating(opponent["rating"], opponent["deviation"], opponent["volatility"]), 0.5)
+        for _ in range(4)
+        for opponent in artifacts[0]["opponents"]
+        for _ in range(2)
+    ]
+    expected = update_rating(GlickoRating(), expected_matches)
+
+    assert result["opponent_count"] == len(artifacts[0]["opponents"])
+    assert result["match_count"] == 8 * result["opponent_count"]
+    assert result["provisional_rating"] == pytest.approx(expected.rating)
+    assert result["deviation"] == pytest.approx(expected.deviation)
+
+    tampered = deepcopy(artifacts[1])
+    tampered["opponents"][0]["rating"] += 1.0
+    tampered["opponent_snapshot_sha256"] = hashlib.sha256(
+        json.dumps(tampered["opponents"], sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    core = {key: value for key, value in tampered.items() if key != "artifact_sha256"}
+    tampered["artifact_sha256"] = hashlib.sha256(
+        json.dumps(core, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    (tmp_path / "calibration-seed-1.json").write_text(json.dumps(tampered), encoding="utf-8")
+    with pytest.raises(ValueError, match="snapshots disagree"):
+        aggregate_calibration(tmp_path, submission_path, submission_path, head_sha)
 
 
 @pytest.mark.parametrize(

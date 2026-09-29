@@ -4,7 +4,7 @@ Validated on 2026-09-28 with Python 3.12.3 and FFmpeg 6.1.1/libx264.
 
 ## Automated checks
 
-- `python -m pytest`: 42 passed.
+- `python -m pytest`: 47 passed.
 - `python -m compileall -q src tests`: passed.
 - All five workflow YAML files parsed with PyYAML.
 - `pip check` reported no broken requirements.
