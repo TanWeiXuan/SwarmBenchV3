@@ -3,6 +3,20 @@
     {
       "author": "TanWeiXuan",
       "built_in": false,
+      "controller_id": "TanWeiXuan/Qwen_3_8_Swift",
+      "deviation": 101.45145208031596,
+      "display_name": "Qwen 3 8 Swift",
+      "draws": 0,
+      "games": 24,
+      "losses": 0,
+      "rating": 1975.690673123152,
+      "version_sha": "2d282a00b5b40649bbdd311da4e3cbf28a81b8e424395d455ad76f19c54eb8be",
+      "volatility": 0.060003088936221895,
+      "wins": 24
+    },
+    {
+      "author": "TanWeiXuan",
+      "built_in": false,
       "controller_id": "TanWeiXuan/lantern_phalanx",
       "deviation": 67.8689079212246,
       "display_name": "Lantern Phalanx",
