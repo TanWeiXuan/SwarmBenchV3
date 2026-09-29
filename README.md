@@ -162,11 +162,11 @@ V3 ratings started fresh; no V2 rating or match history was carried over. Only c
 <!-- LEADERBOARD_START -->
 | Rank | Controller | Author | Rating | RD | W | D | L | Games |
 | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | Lantern Phalanx | TanWeiXuan | 2076 | 81 | 56 | 0 | 0 | 56 |
-| 2 | Radio Rush | SwarmBench | 1655 | 84 | 16 | 5 | 11 | 32 |
-| 3 | Rush | SwarmBench | 1593 | 84 | 14 | 4 | 14 | 32 |
-| 4 | Simple Scout | TanWeiXuan | 1417 | 71 | 9 | 23 | 24 | 56 |
-| 5 | Spread Rush | SwarmBench | 1234 | 84 | 1 | 6 | 25 | 32 |
+| 1 | Lantern Phalanx | TanWeiXuan | 2119 | 72 | 88 | 0 | 0 | 88 |
+| 2 | Radio Rush | SwarmBench | 1645 | 60 | 31 | 12 | 21 | 64 |
+| 3 | Rush | SwarmBench | 1455 | 59 | 19 | 13 | 32 | 64 |
+| 4 | Simple Scout | TanWeiXuan | 1418 | 54 | 16 | 29 | 43 | 88 |
+| 5 | Spread Rush | SwarmBench | 1379 | 65 | 5 | 18 | 41 | 64 |
 <!-- LEADERBOARD_END -->
 
 ## Tournaments, replays, and media
