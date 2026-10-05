@@ -3,6 +3,20 @@
     {
       "author": "TanWeiXuan",
       "built_in": false,
+      "controller_id": "TanWeiXuan/Qwen_3_8_Flash_Next_IQ3XXS",
+      "deviation": 60.84068379484723,
+      "display_name": "Qwen 3 8 Flash Next Iq3Xxs",
+      "draws": 0,
+      "games": 56,
+      "losses": 8,
+      "rating": 2069.4218258374663,
+      "version_sha": "349cb71e078f467c1d3067c26370afe692a6b6a128491fef05ab0d53b0b5cb22",
+      "volatility": 0.06000556598437404,
+      "wins": 48
+    },
+    {
+      "author": "TanWeiXuan",
+      "built_in": false,
       "controller_id": "TanWeiXuan/Qwen_3_8_Swift",
       "deviation": 30.94795076923509,
       "display_name": "Qwen 3 8 Swift",
