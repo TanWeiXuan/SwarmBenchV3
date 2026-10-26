@@ -162,14 +162,14 @@ V3 ratings started fresh; no V2 rating or match history was carried over. Only c
 <!-- LEADERBOARD_START -->
 | Rank | Controller | Author | Rating | RD | W | D | L | Games |
 | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | Lantern Phalanx | TanWeiXuan | 2391 | 29 | 4483 | 21 | 504 | 5008 |
-| 2 | Qwen 3 8 Flash Next Iq3Xxs | TanWeiXuan | 2390 | 29 | 3500 | 18 | 514 | 4032 |
-| 3 | Qwen 3 8 Swift | TanWeiXuan | 2178 | 28 | 3885 | 49 | 978 | 4912 |
-| 4 | Qwen 3 8 Swift Pincer | TanWeiXuan | 1906 | 30 | 2920 | 125 | 1891 | 4936 |
-| 5 | Radio Rush | SwarmBench | 1487 | 27 | 1478 | 530 | 2976 | 4984 |
-| 6 | Rush | SwarmBench | 1315 | 26 | 698 | 748 | 3538 | 4984 |
-| 7 | Simple Scout | TanWeiXuan | 1295 | 26 | 548 | 764 | 3696 | 5008 |
-| 8 | Spread Rush | SwarmBench | 1244 | 26 | 495 | 683 | 3806 | 4984 |
+| 1 | Lantern Phalanx | TanWeiXuan | 2403 | 29 | 4535 | 21 | 508 | 5064 |
+| 2 | Qwen 3 8 Flash Next Iq3Xxs | TanWeiXuan | 2387 | 29 | 3549 | 18 | 521 | 4088 |
+| 3 | Qwen 3 8 Swift | TanWeiXuan | 2165 | 28 | 3924 | 49 | 995 | 4968 |
+| 4 | Qwen 3 8 Swift Pincer | TanWeiXuan | 1903 | 30 | 2952 | 126 | 1914 | 4992 |
+| 5 | Radio Rush | SwarmBench | 1497 | 27 | 1497 | 535 | 3008 | 5040 |
+| 6 | Rush | SwarmBench | 1301 | 26 | 704 | 752 | 3584 | 5040 |
+| 7 | Simple Scout | TanWeiXuan | 1301 | 26 | 558 | 768 | 3738 | 5064 |
+| 8 | Spread Rush | SwarmBench | 1251 | 26 | 503 | 687 | 3850 | 5040 |
 <!-- LEADERBOARD_END -->
 
 ## Tournaments, replays, and media
